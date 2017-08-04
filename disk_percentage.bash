@@ -17,28 +17,44 @@ fi
 target_dir=$1
 hope_percentage=$2
 
-if [ ! -d $target_dir ];then
-	mkdir -p $target_dir
+if [ ! -f $target_dir/attach ];then
+	mkdir -p $target_dir/attach
 fi
+ATTACH="$target_dir/attach"
+SDA_PERCENTAGE=`df $target_dir | grep -v Filesystem | grep -v 文件系统 | awk '{printf $(NF-1)}' | cut -d '%' -f 1`
 
-SDA_PERCENTAGE=`df . | grep -v Filesystem | grep -v 文件系统 | awk '{printf $(NF-1)}' | cut -d '%' -f 1`
-
+# 复制块数字
+block=1
 # 增加比例
 
 while [ $SDA_PERCENTAGE -lt $hope_percentage ];then
 do
-	dd if=/dev/zero of=$target_dir bs=1m  count=512 &>/dev/null
-	#计算出现在的比例
-	$SDA_PERCENTAGE=`df . | grep -v Filesystem | grep -v 文件系统 | awk '{printf $(NF-1)}' | cut -d '%' -f 1`
-	echo "now SDA percentage is $SDA_PERCENTAGE"
-	
+	if [ -f $ATTACH/test.$block ];then
+		dd if=/dev/zero of=$ATTACH/test.$block bs=1m  count=512 &>/dev/null
+		echo "add file $ATTACH/test.$block"
+		#计算出现在的比例
+		$SDA_PERCENTAGE=`df $target_dir | grep -v Filesystem | grep -v 文件系统 | awk '{printf $(NF-1)}' | cut -d '%' -f 1`
+		echo "now SDA percentage is $SDA_PERCENTAGE"
+	fi
+	let block++
 done
 
 
 # 减小比例  还没想出来
 # 清空再填充? 不好
-# 
+# now only for used target_dir
 
+while [ $SDA_PERCENTAGE -gt $hope_percentage ];then
+do
+	if [ -f $ATTACH/test.$block ];then
+		rm -rf $ATTACH/test.$block
+		echo "delete file $ATTACH/test.$block"
+		#计算出现在的比例
+		$SDA_PERCENTAGE=`df $target_dir | grep -v Filesystem | grep -v 文件系统 | awk '{printf $(NF-1)}' | cut -d '%' -f 1`
+		echo "now SDA percentage is $SDA_PERCENTAGE"
+	fi
+	let block++
+done
 
 
 echo "now SDA percentage is $SDA_PERCENTAGE"
