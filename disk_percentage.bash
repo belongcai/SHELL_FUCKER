@@ -8,6 +8,7 @@
 function die()
 {
 	echo "something wrong happens,msg: "$1
+	exit 1
 }
 
 if [[ $1 == "" -o $2 == "" -o $1 == "--help" ]];then
